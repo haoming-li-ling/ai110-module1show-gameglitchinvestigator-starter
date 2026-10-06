@@ -14,9 +14,9 @@ Document at least 3 bugs you found. Add rows as needed.
 
 | Input | Expected Behavior | Actual Behavior | Console Output / Error |
 |-------|-------------------|-----------------|------------------------|
-| | | | |
-| | | | |
-| | | | |
+| 30 (secret: 38)| higher | lower | NA |
+| any number after New Game | a hint | no hint, Game over message stays | NA |
+| select easy/hard | prompt updates to 20 and 50 | prompt stays 100 | NA |
 
 ---
 
