@@ -157,4 +157,27 @@ tests/test_game_logic.py .........                                              
 
 ## 🚀 Stretch Features
 
-- [ ] [If you choose to complete Challenge 4, describe the Enhanced UI changes here — a screenshot is optional]
+- [x] **Challenge 4: Enhanced UI**
+
+  **Color-coded hints with Hot/Cold emojis.** After each wrong guess, the hint box's color and icon show how close you were, along with which way to go:
+
+  | Closeness | Box color | Example hint |
+  |---|---|---|
+  | 🔥 Hot (within 5% of the range) | Red | 🔥 Hot · 📈 Go HIGHER! |
+  | ♨️ Warm (within 15%) | Orange | ♨️ Warm · 📉 Go LOWER! |
+  | 🌤️ Cool (within 35%) | Blue | 🌤️ Cool · 📈 Go HIGHER! |
+  | 🧊 Cold (farther away) | Blue | 🧊 Cold · 📉 Go LOWER! |
+
+  Closeness is measured against the size of the range, so being off by 5 is Hot on Normal (1–100) but only Cool on Easy (1–20). Every level has its own emoji and word, so the hint doesn't rely on color alone. Unchecking "Show hint" hides the hint box.
+
+  **Guess History sidebar.** The sidebar lists every valid guess as a bar that gets longer the closer the guess was, labeled with the guess, its Hot/Cold level and whether it was too high or too low (for example "#2: 48 · 🔥 Hot (too low)"). Rejected input such as "abc" is left out. When hints are off, it shows only the guesses.
+
+  **📊 Game Summary.** When you win or lose, a summary appears below the result:
+  - Four headline numbers: the result (🏆 Won or 💀 Lost), the secret number, guesses used (for example "2 / 8") and points this game. Hovering over the points shows your total score across games.
+  - A table with one row per guess: guess number, guess, result (🔺 Too high, 🔻 Too low or 🎉 Correct), how close it was, and the points it earned or cost.
+
+  The summary stays on screen until you start a new game.
+
+  **Game logic unchanged.** These are display-only changes. Scoring, guess checking and attempt counting work exactly as before. The table's points are worked out by the same `update_score` function the game uses, and a test checks that they add up to the actual score. The display logic (`closeness_label`, `describe_guess_history` and `summarize_session`) lives in `logic_utils.py` and is covered by tests in `tests/test_game_logic.py` and `tests/test_app.py`.
+
+  **Screenshot** *(optional)*: <!-- Insert a screenshot of the colored hints or the Game Summary here -->
