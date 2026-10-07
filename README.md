@@ -142,7 +142,6 @@ Describe your fixed game in numbered steps so a reader can follow along without 
 ## 🧪 Test Results
 
 ```
-```
 ================================================= test session starts =================================================
 platform darwin -- Python 3.14.8, pytest-9.1.1, pluggy-1.6.0
 rootdir: /Users/haomingli/repos/ai110-module1show-gameglitchinvestigator-starter
@@ -154,7 +153,6 @@ tests/test_app.py .........                                                     
 tests/test_game_logic.py .........                                                                              [100%]
 
 ================================================= 18 passed in 1.39s ==================================================
-```
 ```
 
 ## 🚀 Stretch Features

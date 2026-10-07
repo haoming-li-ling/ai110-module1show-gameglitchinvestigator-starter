@@ -5,6 +5,8 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 ## 1. What was broken when you started?
 
 - What did the game look like the first time you ran it?
+
+    Attempts feel weird, some not registering. The hints are unhelpful. Cannot restart game after losing.
 - List at least two concrete bugs you noticed at the start  
   (for example: "the hints were backwards").
 
@@ -26,10 +28,13 @@ Document at least 3 bugs you found. Add rows as needed.
 ## 2. How did you use AI as a teammate?
 
 - Which AI tools did you use on this project (for example: ChatGPT, Gemini, Copilot)?
+
     Claude Code CLI
 - Give one example of an AI suggestion that was correct (including what the AI suggested and how you verified the result).
+
     Fixing the New Game logic. The off-by-one error in attempts left is indeed gone after the fix.
 - Give one example of an AI suggestion you did not accept as written (including what the AI suggested, why you rejected or changed it, and how you verified your version). It does not have to be a suggestion that was wrong: over-engineered, out of scope, harder to read, or a poor fit for this codebase all count.
+
     Unfortunately, this code base is a piece of cake for Claude Code and all of what it did seems reasonable to me.
 
 ---
@@ -37,11 +42,14 @@ Document at least 3 bugs you found. Add rows as needed.
 ## 3. Debugging and testing your fixes
 
 - How did you decide whether a bug was really fixed?
+
     If repeated testing no longer reproduces the wrong behavior.
 - Describe at least one test you ran (manual or using pytest)  
   and what it showed you about your code.
+
     Entering a number and clicking new attempt repeatedly until the number of attempts is used up. The counter kept decreasing. This means that there is a bug with the game termination logic.
 - Did AI help you design or understand any tests? How?
+
     AI added a test for each bug fixed. It confirmed that each fix when removed would cause the codebase to fail at least one of the tests.
 
 ---
