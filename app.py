@@ -103,7 +103,7 @@ if st.session_state.status != "playing":
     st.stop()
 
 if submit:
-    ok, guess_int, err = parse_guess(raw_guess)
+    ok, guess_int, err = parse_guess(raw_guess, low, high)
 
     if not ok:
         st.session_state.history.append(raw_guess)

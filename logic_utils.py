@@ -1,3 +1,6 @@
+import re
+
+
 def get_range_for_difficulty(difficulty: str):
     """Return (low, high) inclusive range for a given difficulty."""
     if difficulty == "Easy":
@@ -9,25 +12,31 @@ def get_range_for_difficulty(difficulty: str):
     return 1, 100
 
 
-def parse_guess(raw: str):
+def parse_guess(raw: str, low: int = None, high: int = None):
     """
-    Parse user input into an int guess.
+    Parse user input into an int guess, optionally checking it is within [low, high].
 
     Returns: (ok: bool, guess_int: int | None, error_message: str | None)
     """
     if raw is None:
         return False, None, "Enter a guess."
 
+    raw = raw.strip()
     if raw == "":
         return False, None, "Enter a guess."
 
+    # Only plain whole numbers: no decimals, exponents, underscores or non-ASCII digits
+    if not re.fullmatch(r"[+-]?[0-9]+", raw):
+        return False, None, "Enter a whole number."
+
     try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
+        value = int(raw)
+    except ValueError:
+        # Python refuses to convert integers with thousands of digits
+        return False, None, "That number is too long."
+
+    if low is not None and high is not None and not low <= value <= high:
+        return False, None, f"Guess must be between {low} and {high}."
 
     return True, value, None
 

@@ -47,7 +47,14 @@ def test_invalid_guess_does_not_use_an_attempt():
     guess(at, "abc")
     assert at.session_state.attempts == 0
     assert "Attempts left: 8" in attempts_left_text(at)
-    assert at.error[0].value == "That is not a number."
+    assert at.error[0].value == "Enter a whole number."
+
+
+def test_out_of_range_guess_does_not_use_an_attempt():
+    at = start_game(difficulty="Easy")
+    guess(at, 500)
+    assert at.session_state.attempts == 0
+    assert at.error[0].value == "Guess must be between 1 and 20."
 
 
 def test_hint_correct_on_even_attempts():
