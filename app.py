@@ -3,11 +3,21 @@ import streamlit as st
 
 from logic_utils import (
     check_guess,
+    closeness_label,
     describe_guess_history,
     get_range_for_difficulty,
     parse_guess,
+    summarize_session,
     update_score,
 )
+
+# Hint box color by closeness: red when hot, orange when warm, blue when cool
+HINT_BOXES = {
+    "🔥 Hot": st.error,
+    "♨️ Warm": st.warning,
+    "🌤️ Cool": st.info,
+    "🧊 Cold": st.info,
+}
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -102,6 +112,25 @@ def render_status():
             st.write("History:", st.session_state.history)
 
 
+def render_summary():
+    rows = summarize_session(
+        st.session_state.history, st.session_state.secret, low, high
+    )
+    st.subheader("📊 Game Summary")
+    col_result, col_secret, col_guesses, col_points = st.columns(4)
+    col_result.metric(
+        "Result", "🏆 Won" if st.session_state.status == "won" else "💀 Lost"
+    )
+    col_secret.metric("Secret", st.session_state.secret)
+    col_guesses.metric("Guesses", f"{len(rows)} / {attempt_limit}")
+    col_points.metric(
+        "Points this game",
+        sum(row["Points"] for row in rows),
+        help=f"Total score across games: {st.session_state.score}",
+    )
+    st.table(rows)
+
+
 raw_guess = st.text_input(
     "Enter your guess:",
     key=f"guess_input_{difficulty}"
@@ -131,6 +160,7 @@ if st.session_state.status != "playing":
         st.success("You already won. Start a new game to play again.")
     else:
         st.error("Game over. Start a new game to try again.")
+    render_summary()
     st.stop()
 
 if submit:
@@ -145,8 +175,12 @@ if submit:
 
         outcome, message = check_guess(guess_int, st.session_state.secret)
 
-        if show_hint:
-            st.warning(message)
+        if show_hint and outcome != "Win":
+            label = closeness_label(
+                abs(guess_int - st.session_state.secret), low, high
+            )
+            emoji, word = label.split(" ", 1)
+            HINT_BOXES[label](f"{word} · {message}", icon=emoji)
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -169,6 +203,9 @@ if submit:
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+
+        if st.session_state.status != "playing":
+            render_summary()
 
     render_status()
 

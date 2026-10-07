@@ -196,6 +196,56 @@ def describe_guess_history(
     return rows
 
 
+def summarize_session(
+    history: Sequence[int | str],
+    secret: int,
+    low: int,
+    high: int,
+) -> list[dict[str, int | str]]:
+    """Build one table row per valid guess for the end-of-game summary.
+
+    Points are worked out with :func:`update_score`, so the table always
+    matches the score the game awarded.
+
+    Args:
+        history: The player's past entries, oldest first. Ints are valid
+            guesses; strings are rejected input and are skipped.
+        secret: The number the player was trying to find.
+        low: Lower bound of the range, inclusive.
+        high: Upper bound of the range, inclusive.
+
+    Returns:
+        One dict per valid guess, oldest first, with display-ready keys:
+
+        - ``"#"`` (int): position among valid guesses, starting at 1.
+        - ``"Guess"`` (int): the guessed value.
+        - ``"Result"`` (str): ``"🎉 Correct"``, ``"🔺 Too high"`` or
+          ``"🔻 Too low"``.
+        - ``"How close"`` (str): see :func:`closeness_label`.
+        - ``"Points"`` (int): points this guess added or removed.
+
+    Examples:
+        >>> rows = summarize_session([40, 50], 50, 1, 100)
+        >>> [(r["Result"], r["Points"]) for r in rows]
+        [('🔻 Too low', -5), ('🎉 Correct', 80)]
+    """
+    results = {
+        "Win": "🎉 Correct",
+        "Too High": "🔺 Too high",
+        "Too Low": "🔻 Too low",
+    }
+    return [
+        {
+            "#": row["number"],
+            "Guess": row["guess"],
+            "Result": results[row["outcome"]],
+            "How close": row["label"],
+            "Points": update_score(0, row["outcome"], row["number"]),
+        }
+        for row in describe_guess_history(history, secret, low, high)
+    ]
+
+
 def update_score(current_score: int, outcome: str, attempt_number: int) -> int:
     """Return the score after one guess.
 

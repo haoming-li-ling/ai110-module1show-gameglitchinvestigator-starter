@@ -22,6 +22,10 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 - Ran `pytest` and simulated games after each change. To show the tests catch real bugs, it put each old bug back in a scratch copy of the repo and confirmed a test failed.
 - Wrote a summary commit message that lists all the fixes.
 - Built a **Guess History** sidebar from the prompt "Implement a 'Guess History' sidebar that visualizes how close your previous guesses were. Add tests for it." It added `closeness_label` and `describe_guess_history` to `logic_utils.py`. They turn each valid guess into a 0–1 "closeness" score and a label: 🎯 Correct, 🔥 Hot, ♨️ Warm, 🌤️ Cool or 🧊 Cold. The labels scale with the difficulty's range, so off by 5 is "Hot" on Normal but "Cool" on Easy. In `app.py`, each guess shows as a progress bar, longer when closer, captioned with the guess, its label and too high/too low. The sidebar respects the "Show hint" checkbox and hides closeness when hints are off. It's redrawn after every guess, using the same reserved-spot trick as "Attempts left", so it never lags behind.
+- Added **structured, user-friendly output** from the prompt "Add structured and user-friendly output to the game such as color-coded hints, emojis for 'Hot/Cold' states, or a summary table of the game session (without breaking core game logic)."
+  - **Color-coded hints:** the hint box now follows the Hot/Cold level from the Guess History sidebar. 🔥 Hot is red, ♨️ Warm is orange, and 🌤️ Cool and 🧊 Cold are blue, with the emoji as the box's icon (for example "🔥 Hot · 📈 Go HIGHER!"). The emoji and word mean color is never the only signal.
+  - **Game Summary:** when a game is won or lost, the game shows four headline numbers (result, secret, guesses used and points this game) and a table with each guess's result, closeness and points. The new `summarize_session` function in `logic_utils.py` builds the table and works out the points with the existing `update_score`, so it always matches the real score.
+  - **Game logic untouched:** the only lines removed from `app.py` were the two that showed the old yellow hint. Scoring, guess checking and attempt counting didn't change.
 
 **What did you have to verify or fix manually?**
 
@@ -30,6 +34,7 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 - **The agent's own check had a mistake.** In its first bug-reintroduction check, it copied pytest's cached files, so the app tests ran against the original code and wrongly passed. It noticed the suspicious result, found the cause and reran the check correctly.
 - I made the commits myself, one per fix, and reviewed each change before committing.
 - **Guess History design choices to review:** the agent chose to show closeness as labels plus bars rather than exact distances, since exact distances would make the game trivial. It also chose to hide closeness when hints are off. I should confirm both match what I want, and check how the sidebar looks in the browser, since the agent only checked it through Streamlit's test runner.
+- **Output feature review:** one existing test broke because it looked for the hint in the yellow box only, and a "Cold" hint is now blue. The agent changed the test to find the hint in any box rather than changing the game. It also found that Streamlit quietly moves an emoji at the start of an alert into the box's icon, so it set the icon explicitly. I should check the hint colors and the summary layout in the browser, and confirm that hiding the hint on a winning guess is what I want.
 
 ---
 
@@ -50,6 +55,11 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 | Same distance on different difficulties | Same as above | `test_closeness_labels_scale_with_range`: off by 5 is "Hot" on 1–100 but "Cool" on 1–20 | Yes; it fails if labels ignore the range | "Close" should depend on how big the range is |
 | Guess History after the game ends | Same as above | `test_history_sidebar_shows_winning_guess_after_game_ends` | Yes; it fails if the sidebar isn't drawn before the game-over stop | Players should still see their history after winning or losing |
 | Hints turned off | Same as above | `test_history_hides_closeness_when_hints_off`: only guess numbers and values are shown | Yes | Closeness is a hint, so it follows the "Show hint" setting |
+| Hint color at each closeness level | "Add structured and user-friendly output … (without breaking core game logic)." | `test_hint_color_matches_closeness`: guesses that are Hot, Warm, Cool and Cold give a red, orange, blue and blue box with the right icon and text | Yes, after the agent set the icon explicitly | Each level should look different, and the direction must still be correct |
+| Summary points vs. the real score | Same as above | `test_summary_points_add_up_to_score` and `test_summary_after_win`: the table's points add up to the score the game awarded (−5 + 80 = 75) | Yes | The table must never disagree with the actual scoring |
+| Summary after a loss | Same as above | `test_summary_after_loss`: six misses on Easy show "💀 Lost", "6 / 6" and −30 points | Yes | The summary should cover losses as well as wins |
+| Summary timing | Same as above | `test_no_summary_while_playing` and `test_summary_stays_after_game_ends`: no table mid-game; it stays after the game ends and clears on New Game | Yes | A summary mid-game would clutter the screen; it belongs at the end |
+| Existing hint test after the color change | Same as above | The agent changed `test_hint_correct_on_even_attempts` to find the hint in any box, not just the yellow one | Failed at first, then passed after the test was updated | The game was correct; the test was tied to the old box color |
 
 ---
 

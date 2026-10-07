@@ -26,6 +26,21 @@ def click_new_game(at):
     at.button[1].click().run()
 
 
+def hint_boxes(at):
+    """(box type, icon, text) for each hint box: the ones with "Go ..."."""
+    boxes = []
+    for kind in ("error", "warning", "info", "success"):
+        for box in getattr(at, kind):
+            if "Go " in box.value:
+                boxes.append((kind, box.icon, box.value))
+    return boxes
+
+
+def hint_text(at):
+    [(kind, icon, text)] = hint_boxes(at)
+    return text
+
+
 def attempts_left_text(at):
     return at.info[0].value
 
@@ -63,7 +78,7 @@ def test_hint_correct_on_even_attempts():
     guess(at, 9)
     guess(at, 9)
     assert at.session_state.attempts == 2
-    assert "HIGHER" in at.warning[0].value
+    assert "HIGHER" in hint_text(at)
 
 
 def test_prompt_shows_difficulty_range():
@@ -163,3 +178,73 @@ def test_history_clears_on_new_game():
     guess(at, 10)
     click_new_game(at)
     assert history_bars(at) == []
+
+
+def test_hint_color_matches_closeness():
+    # Normal range 1-100: off by 2 is hot, 10 warm, 30 cool, 45 cold
+    cases = [
+        (48, "error", "🔥", "Hot · 📈 Go HIGHER!"),
+        (60, "warning", "♨️", "Warm · 📉 Go LOWER!"),
+        (20, "info", "🌤️", "Cool · 📈 Go HIGHER!"),
+        (95, "info", "🧊", "Cold · 📉 Go LOWER!"),
+    ]
+    for value, kind, icon, text in cases:
+        at = start_game(secret=50)
+        guess(at, value)
+        assert hint_boxes(at) == [(kind, icon, text)]
+
+
+def test_hint_hidden_when_hints_off():
+    at = start_game(secret=50)
+    at.checkbox[0].uncheck().run()
+    guess(at, 48)
+    assert hint_boxes(at) == []
+
+
+def test_no_summary_while_playing():
+    at = start_game(secret=50)
+    guess(at, 10)
+    assert at.table == []
+    assert "📊 Game Summary" not in [s.value for s in at.subheader]
+
+
+def test_summary_after_win():
+    at = start_game(secret=50)
+    guess(at, 40)
+    guess(at, 50)
+    assert "📊 Game Summary" in [s.value for s in at.subheader]
+    metrics = {m.label: m.value for m in at.metric}
+    assert metrics == {
+        "Result": "🏆 Won",
+        "Secret": "50",
+        "Guesses": "2 / 8",
+        "Points this game": "75",
+    }
+    table = at.table[0].value
+    assert list(table["Guess"]) == [40, 50]
+    assert list(table["Result"]) == ["🔻 Too low", "🎉 Correct"]
+    assert list(table["Points"]) == [-5, 80]
+    # Points in the table add up to the score the game awarded
+    assert at.session_state.score == 75
+
+
+def test_summary_after_loss():
+    at = start_game(secret=50, difficulty="Easy")
+    at.session_state["secret"] = 15
+    for value in [1, 2, 3, 4, 5, 6]:
+        guess(at, value)
+    assert at.session_state.status == "lost"
+    metrics = {m.label: m.value for m in at.metric}
+    assert metrics["Result"] == "💀 Lost"
+    assert metrics["Guesses"] == "6 / 6"
+    assert metrics["Points this game"] == "-30"
+    assert len(at.table[0].value) == 6
+
+
+def test_summary_stays_after_game_ends():
+    at = start_game(secret=50)
+    guess(at, 50)
+    at.run()
+    assert len(at.table) == 1
+    click_new_game(at)
+    assert at.table == []

@@ -4,6 +4,7 @@ from logic_utils import (
     describe_guess_history,
     get_range_for_difficulty,
     parse_guess,
+    summarize_session,
     update_score,
 )
 
@@ -125,3 +126,23 @@ def test_history_skips_rejected_entries():
 
 def test_history_empty():
     assert describe_guess_history([], secret=50, low=1, high=100) == []
+
+def test_summary_rows_match_scoring():
+    rows = summarize_session([10, "abc", 60, 50], secret=50, low=1, high=100)
+    assert rows == [
+        {"#": 1, "Guess": 10, "Result": "🔻 Too low", "How close": "🧊 Cold", "Points": -5},
+        {"#": 2, "Guess": 60, "Result": "🔺 Too high", "How close": "♨️ Warm", "Points": -5},
+        {"#": 3, "Guess": 50, "Result": "🎉 Correct", "How close": "🎯 Correct", "Points": 70},
+    ]
+
+def test_summary_points_add_up_to_score():
+    history = [10, 60, 55, 50]
+    score = 0
+    for number, value in enumerate(history, start=1):
+        outcome, _ = check_guess(value, 50)
+        score = update_score(score, outcome, number)
+    rows = summarize_session(history, secret=50, low=1, high=100)
+    assert sum(r["Points"] for r in rows) == score
+
+def test_summary_empty_history():
+    assert summarize_session([], secret=50, low=1, high=100) == []
