@@ -18,6 +18,8 @@ Document at least 3 bugs you found. Add rows as needed.
 | any number after New Game | a hint | no hint, Game over message stays | NA |
 | select easy/hard | prompt updates to 20 and 50 | prompt stays 100 | NA |
 | Submit Guess beyond allowed | Attempts left stow at 0 | prompt goes to negative numbers | NA |
+|  Guess beyond allowed | Attempts left stow at 0 | prompt goes to negative numbers | NA |
+
 
 ---
 
