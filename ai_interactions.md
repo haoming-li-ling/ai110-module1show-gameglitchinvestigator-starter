@@ -60,18 +60,46 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 **Prompt used:**
 
 ```
-<!-- Paste the prompt you gave the AI -->
+add professional-grade docstrings to every function in logic_utils.py; review against PEP8 style
 ```
 
 **Linting output before:**
 
+The agent ran `ruff` (0.16.10) on `logic_utils.py` with the PEP 8 (`E`, `W`), naming (`N`), docstring (`D`) and type-annotation (`ANN`, `RUF013`) rules, at PEP 8's 79-character line limit:
+
 ```
-<!-- Paste relevant linter warnings/errors -->
+$ ruff check --isolated --select E,W,N,D,ANN,RUF013 --line-length 79 logic_utils.py
+logic_utils.py:1:1: D100 Missing docstring in public module
+logic_utils.py:4:5: ANN201 Missing return type annotation for public function `get_range_for_difficulty`
+logic_utils.py:15:5: ANN201 Missing return type annotation for public function `parse_guess`
+logic_utils.py:15:32: RUF013 PEP 484 prohibits implicit `Optional`
+logic_utils.py:15:50: RUF013 PEP 484 prohibits implicit `Optional`
+logic_utils.py:16:5: D212 [*] Multi-line docstring summary should start at the first line
+logic_utils.py:17:80: E501 Line too long (85 > 79)
+logic_utils.py:28:80: E501 Line too long (87 > 79)
+logic_utils.py:44:5: ANN201 Missing return type annotation for public function `check_guess`
+logic_utils.py:44:17: ANN001 Missing type annotation for function argument `guess`
+logic_utils.py:44:24: ANN001 Missing type annotation for function argument `secret`
+logic_utils.py:45:5: D212 [*] Multi-line docstring summary should start at the first line
+logic_utils.py:58:5: ANN201 Missing return type annotation for public function `closeness_label`
+logic_utils.py:59:80: E501 Line too long (82 > 79)
+logic_utils.py:72:5: ANN201 Missing return type annotation for public function `describe_guess_history`
+logic_utils.py:72:28: ANN001 Missing type annotation for function argument `history`
+logic_utils.py:73:5: D212 [*] Multi-line docstring summary should start at the first line
+logic_utils.py:77:80: E501 Line too long (87 > 79)
+logic_utils.py:97:5: ANN201 Missing return type annotation for public function `update_score`
+Found 19 errors.
 ```
 
 **Changes applied:**
 
-<!-- Describe what you changed based on the AI's suggestions -->
+- **Docstrings:** I added a module docstring and rewrote every function's docstring in the Google style: a one-line summary, then `Args`, `Returns` and `Examples` sections. They now document behavior that wasn't written down before. For example, unknown difficulties fall back to Normal, the range check needs both `low` and `high`, the closeness bands are 5%, 15% and 35%, and the score can go below zero.
+- **Executable examples:** every `Examples` section is a doctest. `python -m doctest logic_utils.py` passes, so the examples can't silently go out of date.
+- **Implicit `Optional` (RUF013):** `low: int = None` became `low: int | None = None`, since the old hint claimed `int` while allowing `None`.
+- **Type hints (ANN):** I added argument and return types to every function, for example `parse_guess(...) -> tuple[bool, int | None, str | None]`. I added `from __future__ import annotations` so the `X | None` syntax also works on Python versions before 3.10.
+- **Line length (E501):** I wrapped the long docstrings and the regex comment to fit in 79 characters. Long signatures now put one argument per line.
+- **Result:** with the Google docstring convention, `ruff check ... --config "lint.pydocstyle.convention='google'"` reports "All checks passed!", and all 38 tests still pass. The code's behavior is unchanged.
+- **Not applied:** `ruff format` would reflow the dict literal in `describe_guess_history`. That's a formatter preference rather than a PEP 8 rule, so I kept the existing style. `app.py` and the tests still have 6 lines over 79 characters; they were outside the scope of this prompt.
 
 ---
 
