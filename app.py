@@ -103,6 +103,14 @@ if "status" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# Start a fresh game when the difficulty changes so the secret fits the new range
+if st.session_state.get("secret_difficulty") != difficulty:
+    st.session_state.secret_difficulty = difficulty
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.attempts = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+
 st.subheader("Make a guess")
 
 # Placeholders so the status can be redrawn after a guess updates session state
