@@ -21,6 +21,7 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 - Tested the input parser with unusual inputs and tightened it: only whole numbers, inside the difficulty's range, with spaces trimmed.
 - Ran `pytest` and simulated games after each change. To show the tests catch real bugs, it put each old bug back in a scratch copy of the repo and confirmed a test failed.
 - Wrote a summary commit message that lists all the fixes.
+- Built a **Guess History** sidebar from the prompt "Implement a 'Guess History' sidebar that visualizes how close your previous guesses were. Add tests for it." It added `closeness_label` and `describe_guess_history` to `logic_utils.py`. They turn each valid guess into a 0–1 "closeness" score and a label: 🎯 Correct, 🔥 Hot, ♨️ Warm, 🌤️ Cool or 🧊 Cold. The labels scale with the difficulty's range, so off by 5 is "Hot" on Normal but "Cool" on Easy. In `app.py`, each guess shows as a progress bar, longer when closer, captioned with the guess, its label and too high/too low. The sidebar respects the "Show hint" checkbox and hides closeness when hints are off. It's redrawn after every guess, using the same reserved-spot trick as "Attempts left", so it never lags behind.
 
 **What did you have to verify or fix manually?**
 
@@ -28,6 +29,7 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 - **Design decisions were mine.** The agent asked before each fix, and I decided what counted as a bug. For example, I kept Hard at 5 attempts even though the agent pointed out that 1–200 can't always be solved in 5 guesses.
 - **The agent's own check had a mistake.** In its first bug-reintroduction check, it copied pytest's cached files, so the app tests ran against the original code and wrongly passed. It noticed the suspicious result, found the cause and reran the check correctly.
 - I made the commits myself, one per fix, and reviewed each change before committing.
+- **Guess History design choices to review:** the agent chose to show closeness as labels plus bars rather than exact distances, since exact distances would make the game trivial. It also chose to hide closeness when hints are off. I should confirm both match what I want, and check how the sidebar looks in the browser, since the agent only checked it through Streamlit's test runner.
 
 ---
 
@@ -43,6 +45,11 @@ I used Claude Code (Claude Opus 5.5) in the terminal. I started with one bug, "T
 | Out-of-range guess (500 on Easy) using an attempt | "Fix all and fill in ai_interactions.md" | `test_parse_rejects_out_of_range` and `test_out_of_range_guess_does_not_use_an_attempt` | Yes | Typos shouldn't cost a guess; the edges (1 and 20) are still accepted |
 | Spaces-only input | "Fix all and fill in ai_interactions.md" | `test_parse_whitespace_only_asks_for_a_guess`: "   " gives "Enter a guess." | Yes | Blank input should get the same message as an empty box |
 | Very long number (5,000 digits) | "Fix all and fill in ai_interactions.md" | `test_parse_very_long_number`: it's rejected with "That number is too long." | Yes | Python refuses to convert integers this long, so it needs its own message |
+| Rejected input mixed into Guess History | "Implement a 'Guess History' sidebar … Add tests for it." | `test_history_skips_rejected_entries` and `test_history_sidebar_shows_each_guess`: "abc" is left out, and the guesses are numbered 1, 2 without gaps | Yes; it fails if rejected input is counted | History keeps rejected text for debugging, but it isn't a guess |
+| Closeness at the extremes of the range | Same as above | `test_history_closeness_stays_between_0_and_1`: the farthest guess gives 0.0 and the exact one 1.0 | Yes | The progress bar needs a value between 0 and 1 |
+| Same distance on different difficulties | Same as above | `test_closeness_labels_scale_with_range`: off by 5 is "Hot" on 1–100 but "Cool" on 1–20 | Yes; it fails if labels ignore the range | "Close" should depend on how big the range is |
+| Guess History after the game ends | Same as above | `test_history_sidebar_shows_winning_guess_after_game_ends` | Yes; it fails if the sidebar isn't drawn before the game-over stop | Players should still see their history after winning or losing |
+| Hints turned off | Same as above | `test_history_hides_closeness_when_hints_off`: only guess numbers and values are shown | Yes | Closeness is a hint, so it follows the "Show hint" setting |
 
 ---
 

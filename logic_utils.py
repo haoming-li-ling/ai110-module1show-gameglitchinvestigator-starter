@@ -55,6 +55,45 @@ def check_guess(guess, secret):
     return "Too Low", "📈 Go HIGHER!"
 
 
+def closeness_label(distance: int, low: int, high: int):
+    """Describe how far a guess is from the secret, relative to the range size."""
+    if distance == 0:
+        return "🎯 Correct"
+    ratio = distance / (high - low + 1)
+    if ratio <= 0.05:
+        return "🔥 Hot"
+    if ratio <= 0.15:
+        return "♨️ Warm"
+    if ratio <= 0.35:
+        return "🌤️ Cool"
+    return "🧊 Cold"
+
+
+def describe_guess_history(history, secret: int, low: int, high: int):
+    """
+    Build one row per valid guess describing how close it was to the secret.
+
+    Entries that aren't ints (rejected input kept in history) are skipped.
+    Returns: list of dicts with keys number, guess, outcome, closeness (0.0-1.0), label
+    """
+    rows = []
+    span = high - low
+    for value in history:
+        if not isinstance(value, int):
+            continue
+        distance = abs(value - secret)
+        closeness = 1.0 - distance / span if span else 1.0
+        outcome, _ = check_guess(value, secret)
+        rows.append({
+            "number": len(rows) + 1,
+            "guess": value,
+            "outcome": outcome,
+            "closeness": min(max(closeness, 0.0), 1.0),
+            "label": closeness_label(distance, low, high),
+        })
+    return rows
+
+
 def update_score(current_score: int, outcome: str, attempt_number: int):
     """Update score based on outcome and attempt number."""
     if outcome == "Win":

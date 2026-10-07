@@ -108,3 +108,58 @@ def test_rerun_keeps_secret_on_same_difficulty():
     at = start_game(secret=50)
     at.run()
     assert at.session_state.secret == 50
+
+
+def history_bars(at):
+    """Text of each Guess History bar in the sidebar."""
+    return [bar.proto.text for bar in at.sidebar.get("progress")]
+
+
+def test_history_sidebar_starts_empty():
+    at = start_game()
+    assert at.sidebar.subheader[0].value == "Guess History"
+    assert any(c.value == "No guesses yet." for c in at.sidebar.caption)
+    assert history_bars(at) == []
+
+
+def test_history_sidebar_shows_each_guess():
+    at = start_game(secret=50)
+    guess(at, 10)
+    guess(at, "abc")
+    guess(at, 48)
+    assert history_bars(at) == [
+        "#1: 10 · 🧊 Cold (too low)",
+        "#2: 48 · 🔥 Hot (too low)",
+    ]
+
+
+def test_history_bars_grow_as_guesses_get_closer():
+    at = start_game(secret=50)
+    guess(at, 10)
+    guess(at, 48)
+    values = [bar.proto.value for bar in at.sidebar.get("progress")]
+    assert values[0] < values[1]
+
+
+def test_history_sidebar_shows_winning_guess_after_game_ends():
+    at = start_game(secret=50)
+    guess(at, 50)
+    at.run()
+    assert history_bars(at) == ["#1: 50 · 🎯 Correct"]
+
+
+def test_history_hides_closeness_when_hints_off():
+    at = start_game(secret=50)
+    guess(at, 48)
+    at.checkbox[0].uncheck().run()
+    assert history_bars(at) == []
+    captions = [c.value for c in at.sidebar.caption]
+    assert "#1: 48" in captions
+    assert "Turn on hints to see how close each guess was." in captions
+
+
+def test_history_clears_on_new_game():
+    at = start_game(secret=50)
+    guess(at, 10)
+    click_new_game(at)
+    assert history_bars(at) == []

@@ -1,7 +1,13 @@
 import random
 import streamlit as st
 
-from logic_utils import check_guess, get_range_for_difficulty, parse_guess, update_score
+from logic_utils import (
+    check_guess,
+    describe_guess_history,
+    get_range_for_difficulty,
+    parse_guess,
+    update_score,
+)
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -56,9 +62,33 @@ st.subheader("Make a guess")
 # Placeholders so the status can be redrawn after a guess updates session state
 info_box = st.empty()
 debug_box = st.empty()
+history_box = st.sidebar.empty()
+
+
+def render_history():
+    with history_box.container():
+        st.subheader("Guess History")
+        rows = describe_guess_history(
+            st.session_state.history, st.session_state.secret, low, high
+        )
+        if not rows:
+            st.caption("No guesses yet.")
+            return
+        for row in rows:
+            if show_hint:
+                direction = "" if row["outcome"] == "Win" else f" ({row['outcome'].lower()})"
+                st.progress(
+                    row["closeness"],
+                    text=f"#{row['number']}: {row['guess']} · {row['label']}{direction}",
+                )
+            else:
+                st.caption(f"#{row['number']}: {row['guess']}")
+        if not show_hint:
+            st.caption("Turn on hints to see how close each guess was.")
 
 
 def render_status():
+    render_history()
     info_box.info(
         f"Guess a number between {low} and {high}. "
         f"Attempts left: {attempt_limit - st.session_state.attempts}"
@@ -72,8 +102,6 @@ def render_status():
             st.write("History:", st.session_state.history)
 
 
-render_status()
-
 raw_guess = st.text_input(
     "Enter your guess:",
     key=f"guess_input_{difficulty}"
@@ -86,6 +114,9 @@ with col2:
     new_game = st.button("New Game 🔁")
 with col3:
     show_hint = st.checkbox("Show hint", value=True)
+
+# Draw after the widgets so render_history can read show_hint
+render_status()
 
 if new_game:
     st.session_state.attempts = 0

@@ -1,4 +1,11 @@
-from logic_utils import check_guess, get_range_for_difficulty, parse_guess, update_score
+from logic_utils import (
+    check_guess,
+    closeness_label,
+    describe_guess_history,
+    get_range_for_difficulty,
+    parse_guess,
+    update_score,
+)
 
 def test_winning_guess():
     # If the secret is 50 and guess is 50, it should be a win
@@ -76,3 +83,45 @@ def test_parse_rejects_out_of_range():
         assert not ok and err == "Guess must be between 1 and 20."
     assert parse_guess("1", 1, 20) == (True, 1, None)
     assert parse_guess("20", 1, 20) == (True, 20, None)
+
+def test_closeness_labels_on_normal_range():
+    assert closeness_label(0, 1, 100) == "🎯 Correct"
+    assert closeness_label(5, 1, 100) == "🔥 Hot"
+    assert closeness_label(6, 1, 100) == "♨️ Warm"
+    assert closeness_label(15, 1, 100) == "♨️ Warm"
+    assert closeness_label(35, 1, 100) == "🌤️ Cool"
+    assert closeness_label(36, 1, 100) == "🧊 Cold"
+
+def test_closeness_labels_scale_with_range():
+    # Off by 5 is hot on Normal (1-100) but cool on Easy (1-20)
+    assert closeness_label(5, 1, 100) == "🔥 Hot"
+    assert closeness_label(5, 1, 20) == "🌤️ Cool"
+
+def test_history_rows_describe_each_guess():
+    rows = describe_guess_history([10, 48, 50], secret=50, low=1, high=100)
+    assert [r["number"] for r in rows] == [1, 2, 3]
+    assert [r["guess"] for r in rows] == [10, 48, 50]
+    assert [r["outcome"] for r in rows] == ["Too Low", "Too Low", "Win"]
+    assert [r["label"] for r in rows] == ["🧊 Cold", "🔥 Hot", "🎯 Correct"]
+
+def test_history_closer_guesses_have_higher_closeness():
+    rows = describe_guess_history([1, 30, 49, 50], secret=50, low=1, high=100)
+    closeness = [r["closeness"] for r in rows]
+    assert closeness == sorted(closeness)
+    assert closeness[-1] == 1.0
+
+def test_history_closeness_stays_between_0_and_1():
+    # Farthest possible guesses at both ends of the range
+    rows = describe_guess_history([1, 100], secret=1, low=1, high=100)
+    assert rows[0]["closeness"] == 1.0
+    assert rows[1]["closeness"] == 0.0
+
+def test_history_skips_rejected_entries():
+    # Rejected input is stored as the raw text, and shouldn't count as a guess
+    rows = describe_guess_history(["abc", 40, "", 60], secret=50, low=1, high=100)
+    assert [r["guess"] for r in rows] == [40, 60]
+    assert [r["number"] for r in rows] == [1, 2]
+    assert [r["outcome"] for r in rows] == ["Too Low", "Too High"]
+
+def test_history_empty():
+    assert describe_guess_history([], secret=50, low=1, high=100) == []
